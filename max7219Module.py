@@ -2,7 +2,7 @@ import time
 import numpy as np
 from font import baseFont as ft
 from constants import *
-import RPi.GPIO as GPIO
+import RPi.GPIO as io
 
 
 class Matrix:
@@ -10,9 +10,9 @@ class Matrix:
         self.array = np.zeros((8, 32), dtype="int8")
 
         if gpioSetting.lower() == "bcm":
-            GPIO.setmode(GPIO.BCM)
+            io.setmode(io.BCM)
         else:
-            GPIO.setmode(GPIO.BOARD)
+            io.setmode(io.BOARD)
 
         self.cs = chipSelectPin
         self.clk = clockPin
@@ -21,9 +21,9 @@ class Matrix:
         self.setup()
 
     def setup(self):
-        GPIO.setup(self.cs, GPIO.OUTPUT)
-        GPIO.setup(self.clk, GPIO.OUTPUT)
-        GPIO.setup(self.din, GPIO.OUTPUT)
+        io.setup(self.cs, io.OUTPUT)
+        io.setup(self.clk, io.OUTPUT)
+        io.setup(self.din, io.OUTPUT)
 
         self.powerDown()
 
@@ -36,12 +36,8 @@ class Matrix:
     def __call__(self):
         arrs = np.hsplit(self.array, 4)
         for i, arr in enumerate(arrs):
-            mat = i
             for j, row in enumerate(arr):
-                listed = [str(item) for item in list(row)]
-                strbin = "".join(listed)
-                strbin = "0b{}".format(strbin)
-                self.setMatrixRow(matrix=mat, row=j, value=eval(strbin))
+                self.setMatrixRow(matrix=i, row=j, value=self.toByte(row))
 
     def powerDown(self, how="full"):
         for a in range(1, 9):
@@ -53,18 +49,25 @@ class Matrix:
         self.array = np.zeros((8, 32), dtype="int8")
 
     def pulse(self, port):  # clk or cs
-        GPIO.output(port, True)
-        GPIO.output(port, False)
+        io.output(port, True)
+        io.output(port, False)
 
-    def byteShifter(self, hex_val):
+    def toByte(self, values: list):
+        powers = [128, 64, 32, 16, 8, 4, 2, 1]
+        integer = 0
+        for i in range(len(powers)):
+            integer += powers[i] * values[i]
+        return integer
+
+    def byteShifter(self, hexVal):
         for _ in range(8):
-            temp = hex_val & 0x80
+            temp = hexVal & 0x80
             if temp == 0x80:
-                GPIO.output(self.din, True)
+                io.output(self.din, True)
             elif temp == 0x0:
-                GPIO.output(self.din, False)
+                io.output(self.din, False)
             self.pulse(self.clk)
-            hex_val <<= 0x01
+            hexVal <<= 0x01
 
     def sendByte(self, data):
         for byte in data:
