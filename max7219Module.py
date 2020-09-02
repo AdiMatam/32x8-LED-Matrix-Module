@@ -1,8 +1,15 @@
 import time
 import numpy as np
 from font import baseFont as ft
-from constants import *
 import RPi.GPIO as io
+
+DECODE = 0x09
+INTENSITY = 0x0A
+SCANLIM = 0x0B
+SHUTDOWN = 0x0C
+TEST = 0x0F
+
+NULL = [0x00, 0x00]
 
 
 class Matrix:
@@ -21,9 +28,9 @@ class Matrix:
         self.setup()
 
     def setup(self):
-        io.setup(self.cs, io.OUTPUT)
-        io.setup(self.clk, io.OUTPUT)
-        io.setup(self.din, io.OUTPUT)
+        io.setup(self.cs, io.OUT)
+        io.setup(self.clk, io.OUT)
+        io.setup(self.din, io.OUT)
 
         self.powerDown()
 
@@ -79,7 +86,13 @@ class Matrix:
         self.sendByte(bundle)
 
     def binarize(self, value):
-        v = eval(value)
+        if "b" in value:
+            v = int(value, base=2)
+        elif "x" in value:
+            v = int(value, base=16)
+        else:
+            v = int(value)
+
         v = format(v, "08b")[::-1]
         return list(v)
 
@@ -102,22 +115,16 @@ class Matrix:
             self.setChar(idx * 8, letter)
 
     def scrolled(self, message, delay=0.1):
-        master = []
         message += "   "
 
-        for char in message:
-            master.extend(ft[char])
-
-        while True:
-            self.array = np.delete(self.array, obj=0, axis=1)  # obj is index
-            self.array = np.insert(
-                self.array, obj=30, values=self.binarize(master[0]), axis=1
-            )
-            self()
-            time.sleep(delay)
-            del master[0]
-            if np.all((self.array == 0)):
-                break
+        for letter in message:
+            for byte in ft[letter]:
+                self.array = np.delete(self.array, obj=0, axis=1)  # obj is index
+                self.array = np.insert(
+                    self.array, obj=30, values=self.binarize(byte), axis=1
+                )
+                self()
+                time.sleep(delay)
 
     def stacked(self, message, delay=0.1, reverse=False):
         charsets = [message[i : i + 4] for i in range(0, len(message), 4)]
