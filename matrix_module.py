@@ -13,17 +13,12 @@ NULL = [0x00, 0x00]
 
 
 class Matrix:
-    def __init__(self, chip_select_pin, clock_pin, data_pin, gpio_setting="board"):
+    def __init__(self):
         self.array = np.zeros((8, 32), dtype="int8")
 
-        if gpio_setting.lower() == "bcm":
-            io.setmode(io.BCM)
-        else:
-            io.setmode(io.BOARD)
-
-        self.cs = chip_select_pin
-        self.clk = clock_pin
-        self.din = data_pin
+        self.cs = 24
+        self.clk = 23
+        self.din = 19
 
         self.__setup()
 
@@ -112,6 +107,8 @@ class Matrix:
 
     # PRIVATE
     def __setup(self):
+        io.setmode(io.BOARD)
+
         io.setup(self.cs, io.OUT)
         io.setup(self.clk, io.OUT)
         io.setup(self.din, io.OUT)
