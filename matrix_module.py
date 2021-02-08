@@ -33,10 +33,7 @@ class Matrix:
             self.__send_byte([a, 0x00] * 4)
         if how == "full":
             self.__send_byte((SHUTDOWN, 0x00))
-
-    def reset(self):
-        self.array = np.zeros((8, 32), dtype="int8")
-
+            
     def set_col(self, col, value):
         bits = self.__to_byte(value)
         self.array[:, col] = bits
